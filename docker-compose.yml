@@ -1,0 +1,74 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: abituriyent_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-abituriyent}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-abituriyent_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-abituriyent_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-abituriyent} -d ${POSTGRES_DB:-abituriyent_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - abituriyent_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: abituriyent_backend
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-abituriyent}:${POSTGRES_PASSWORD:-abituriyent_secret}@postgres:5432/${POSTGRES_DB:-abituriyent_db}
+      SECRET_KEY: ${SECRET_KEY:-changeme_in_production_use_openssl_rand}
+      ALGORITHM: ${ALGORITHM:-HS256}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    networks:
+      - abituriyent_net
+    restart: unless-stopped
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: abituriyent_frontend
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - abituriyent_net
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  abituriyent_net:
+    driver: bridge

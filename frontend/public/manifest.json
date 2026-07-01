@@ -1,0 +1,23 @@
+{
+  "name": "AbituriyentAI — BMBA Tayyorgarlik",
+  "short_name": "AbituriyentAI",
+  "description": "O'zbekiston BMBA imtihoniga AI yordamida tayyorlaning",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "categories": ["education"],
+  "lang": "uz",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
